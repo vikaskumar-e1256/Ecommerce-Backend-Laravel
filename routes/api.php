@@ -1,10 +1,10 @@
 <?php
 
-use App\Http\Controllers\API\Auth\AuthController;
-use App\Http\Controllers\API\Category\CategoryController;
-use App\Http\Controllers\API\UserProfileController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\API\Auth\AuthController;
+use App\Http\Controllers\API\UserProfileController;
+use App\Http\Controllers\API\Product\ProductController;
+use App\Http\Controllers\API\Category\CategoryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -24,9 +24,9 @@ Route::group(['middleware' => ['jwt.verify']], function() {
     Route::get('signout', [AuthController::class, 'signout']);
     Route::get('profile', UserProfileController::class);
     Route::apiResources([
-        'categories' => CategoryController::class
+        'categories' => CategoryController::class,
+        'products' => ProductController::class
     ]);
 
 
 });
-
