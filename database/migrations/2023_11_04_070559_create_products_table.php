@@ -18,6 +18,7 @@ return new class extends Migration
             $table->text("description");
             $table->decimal("price", 8, 2)->default(0.00);
             $table->integer('quantity')->default(0);
+            $table->integer('sold')->default(0)->comment('How many times product sold.');
             $table->string('photo')->default('blank.png');
             $table->boolean('shipping')->nullable()->default(false)->comment('some product will be digital like gift card');
             $table->foreignIdFor(Category::class)->nullable();

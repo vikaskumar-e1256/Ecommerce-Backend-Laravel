@@ -23,6 +23,8 @@ Route::post('signup', [AuthController::class, 'signup']);
 Route::group(['middleware' => ['jwt.verify']], function() {
     Route::get('signout', [AuthController::class, 'signout']);
     Route::get('profile', UserProfileController::class);
+    Route::get('products/related/{product_id}', [ProductController::class, 'relatedProducts']);
+    Route::post('products/by/search', [ProductController::class, 'listBySearch']);
     Route::apiResources([
         'categories' => CategoryController::class,
         'products' => ProductController::class

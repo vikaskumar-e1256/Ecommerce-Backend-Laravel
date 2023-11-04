@@ -12,11 +12,30 @@ use Symfony\Component\HttpFoundation\Response;
 class ProductController extends ApiBaseController
 {
     /**
+     * sell / arrival
+     * get products based on sold param.
+     * by sell = /products?sortBy=sold&order=desc&limit=4
+     * by arrival = /products?sortBy=created_at&order=desc&limit=4
+     * if no param are comming, then return all products
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::all();
+        $sortBy = $request->input('sortBy', 'id'); // Default to sorting by 'id' if not specified
+        $order = $request->input('order', 'asc'); // Default to ascending order if not specified
+        $limit = $request->input('limit', null); // No default limit if not specified
+
+        $query = Product::query();
+
+        // Sort the products
+        $query->orderBy($sortBy, $order);
+
+        // Limit the number of results
+        if ($limit !== null) {
+            $query->take($limit);
+        }
+
+        $products = $query->get();
         return $this->responseHelper->success($products, 'Products retrieved successfully', Response::HTTP_OK);
     }
 
@@ -130,4 +149,125 @@ class ProductController extends ApiBaseController
             return $this->responseHelper->error('An error occurred while deleting the product', Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
+
+    public function relatedProducts(Request $request, $id)
+    {
+        $product = Product::find($id);
+
+        if (!$product) {
+            return $this->responseHelper->error('Product not found', Response::HTTP_NOT_FOUND);
+        }
+
+        // Get the category_id of the current product
+        $categoryId = $product->category_id;
+
+        $limit = $request->input('limit', null); // Get the 'limit' query parameter
+
+        // Build the query to find related products
+        $query = Product::where('category_id', $categoryId)
+        ->where('id', '!=', $id); // Exclude the current product
+
+        // Limit the number of results if 'limit' is provided
+        if ($limit !== null) {
+            $query->take($limit);
+        }
+
+        $relatedProducts = $query->get();
+
+        return $this->responseHelper->success($relatedProducts, 'Related products retrieved successfully', Response::HTTP_OK);
+    }
+
+    /**
+     * list products by search
+     * we will implement product search in react frontend
+     * we will show categories in checkbox and price range in radio buttons
+     * as the user clicks on those checkbox and radio buttons
+     * we will make api request and show the products to users based on what he wants
+     */
+    public function listBySearch(Request $request)
+    {
+        $order = $request->input('order', 'desc');
+        $sortBy = $request->input('sortBy', '_id');
+        $limit = $request->input('limit', 100);
+        $skip = $request->input('skip', 0);
+
+        // Prepare an array to hold the search criteria
+        $searchCriteria = [];
+
+        $filters = $request->input('filters', []);
+
+        foreach ($filters as $key => $value) {
+            if (!empty($value)) {
+                if ($key === 'price') {
+                    // Translate the price range to a range of values
+                    $priceRange = explode('-', $value);
+                    if (count($priceRange) === 2) {
+                        $searchCriteria[] = [
+                            'key' => 'price',
+                            'operator' => '>=',
+                            'value' => $priceRange[0],
+                        ];
+                        $searchCriteria[] = [
+                            'key' => 'price',
+                            'operator' => '<=',
+                            'value' => $priceRange[1],
+                        ];
+                    }
+                } else {
+                    $searchCriteria[] = [
+                        'key' => $key,
+                        'operator' => '=',
+                        'value' => $value,
+                    ];
+                }
+            }
+        }
+
+        $query = Product::select('*')
+            ->with('category')
+            ->orderBy($sortBy, $order)
+            ->skip($skip)
+            ->take($limit);
+
+        foreach ($searchCriteria as $criteria) {
+            $query->where($criteria['key'], $criteria['operator'], $criteria['value']);
+        }
+
+        $products = $query->get();
+
+        return response()->json([
+            'size' => count($products),
+            'data' => $products,
+        ]);
+    }
+    // public function searchProducts(Request $request)
+    // {
+    //     // Get selected category IDs from the request (assuming they are sent as an array)
+    //     $selectedCategories = $request->input('categories', []);
+
+    //     // Get selected price range from the request
+    //     $selectedPriceRange = $request->input('price_range');
+
+    //     // Start building the query to fetch products
+    //     $query = Product::query();
+
+    //     // Filter products based on selected categories (if any)
+    //     if (!empty($selectedCategories)) {
+    //         $query->whereIn('category_id', $selectedCategories);
+    //     }
+
+    //     // Filter products based on selected price range (if any)
+    //     if ($selectedPriceRange === 'low') {
+    //         $query->where('price', '<', 50); // Adjust the price range as needed
+    //     } elseif ($selectedPriceRange === 'medium') {
+    //         $query->whereBetween('price', [50, 100]);
+    //     } elseif ($selectedPriceRange === 'high') {
+    //         $query->where('price', '>', 100); // Adjust the price range as needed
+    //     }
+
+    //     // Retrieve the filtered products
+    //     $products = $query->get();
+
+    //     return $this->responseHelper->success($products, 'Products retrieved based on search criteria', Response::HTTP_OK);
+    // }
 }

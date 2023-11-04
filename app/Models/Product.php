@@ -14,6 +14,7 @@ class Product extends Model
         'description',
         'price',
         'quantity',
+        'sold',
         'photo',
         'shipping',
         'category_id',
