@@ -18,17 +18,27 @@ class JwtMiddleware extends BaseMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
+        $token = $request->header('Authorization');
+
+        if (!$token) {
+            return response()->json(['status' => 'Authorization Token not found'], 401);
+        }
+
+        // Extract the token without the "Bearer " prefix
+        $token = str_replace('Bearer ', '', $token);
+
         try {
-            $user = JWTAuth::parseToken()->authenticate();
+            $user = JWTAuth::setToken($token)->authenticate();
         } catch (Exception $e) {
-            if ($e instanceof \Tymon\JWTAuth\Exceptions\TokenInvalidException){
-                return response()->json(['status' => 'Token is Invalid']);
-            }else if ($e instanceof \Tymon\JWTAuth\Exceptions\TokenExpiredException){
-                return response()->json(['status' => 'Token is Expired']);
-            }else{
-                return response()->json(['status' => 'Authorization Token not found']);
+            if ($e instanceof \Tymon\JWTAuth\Exceptions\TokenInvalidException) {
+                return response()->json(['status' => 'Token is Invalid'], 401);
+            } else if ($e instanceof \Tymon\JWTAuth\Exceptions\TokenExpiredException) {
+                return response()->json(['status' => 'Token is Expired'], 401);
+            } else {
+                return response()->json(['status' => 'Authorization Token not found'], 401);
             }
         }
+
         return $next($request);
     }
 }

@@ -77,18 +77,17 @@ class AuthController extends ApiBaseController
 
     public function signout(Request $request)
     {
-        // Validate the request.
-        $validator = Validator::make($request->all(), [
-            'token' => 'required',
-        ]);
+        // Get the token from the "Authorization" header
+        $token = str_replace('Bearer ', '', $request->header('Authorization'));
 
-        if ($validator->fails()) {
-            return response()->json(['error' => $validator->messages()], Response::HTTP_BAD_REQUEST);
+        // Validate the token
+        if (empty($token)) {
+            return response()->json(['error' => 'Token not provided'], Response::HTTP_BAD_REQUEST);
         }
 
         // Invalidate the JWT token.
         try {
-            JWTAuth::invalidate($request->token);
+            JWTAuth::invalidate($token);
 
             return response()->json([
                 'success' => true,
@@ -101,4 +100,5 @@ class AuthController extends ApiBaseController
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
+
 }
