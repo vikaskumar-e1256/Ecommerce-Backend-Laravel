@@ -46,7 +46,7 @@ class AuthController extends ApiBaseController
         // Validate the credentials.
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
-            'password' => 'required|string|min:6|max:50',
+            'password' => 'required|string|max:50',
         ]);
 
         if ($validator->fails()) {
